@@ -1,23 +1,20 @@
+using System;
+using System.Linq;
 using UnityEngine;
-
-/// <summary>
-/// Component of <see cref="SaveFile"/> with 
-/// an object ID and array of <see cref="SaveProperty"/>
-/// </summary>
-public struct SaveFileComponent
-{
-    /// <summary>
-    /// ID of the object that the properties belong to
-    /// </summary>
-    public int ObjectId { get; set; }
-    public SaveProperty[] Properties { get; set; }
-}
 
 /// <summary>
 /// Storage form of save file with
 /// array of <see cref="SaveFileComponent"/>
 /// </summary>
+[Serializable]
 public class SaveFile
 {
-    SaveFileComponent[] Components { get; set; }
+    public string saveName = string.Empty;
+    public SaveFileComponent[] components = new SaveFileComponent[0];
+
+    public void AddSaveComponent(SaveFileComponent component)
+    {
+        Debug.Log($"Added {component} to savefile");
+        components.Append(component);
+    }
 }

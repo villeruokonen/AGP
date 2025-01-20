@@ -6,15 +6,15 @@ using UnityEngine;
 public interface ISaveable
 {
     /// <summary>
-    /// Get saved properties serialized as JSON string
+    /// Get anything needing to be saved
     /// </summary>
     /// <returns></returns>
-    string GetJsonProperties();
+    SaveProperty[] GetProperties();
     
     /// <summary>
-    /// Load properties from JSON
+    /// Load properties
     /// </summary>
-    /// <param name="json"></param>
+    /// <param name="properties"></param>
 
-    void LoadProperties(string json);
+    void LoadProperties(SaveProperty[] properties);
 }
