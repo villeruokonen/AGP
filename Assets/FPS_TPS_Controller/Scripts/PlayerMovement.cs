@@ -150,7 +150,7 @@ public class PlayerMovement : MonoBehaviour
     {
         Vector3 velocity;
         var friction = IsGrounded ? _groundFriction : _airFriction;
-        
+
         if (!IsGrounded)
         {
             var airFactor = _airMovementFactor;
@@ -177,19 +177,16 @@ public class PlayerMovement : MonoBehaviour
             Vector3.up, Quaternion.identity, _standingHeight, mask, QueryTriggerInteraction.Ignore);
     }
 
-    bool CanJump()
+    bool HasSpaceToJump()
     {
-        if (!IsGrounded)
-            return false;
-        
         // Check whether there is space to jump.
         int mask = LayerMask.NameToLayer("Player");
         mask = 1 << mask;
         mask = ~mask;
-        
+
         Vector3 halfExtents = new Vector3(_char.radius, _standingHeight / 8, _char.radius);
 
-        return Physics.BoxCast(transform.position, halfExtents,
+        return !Physics.BoxCast(transform.position, halfExtents,
             Vector3.up, Quaternion.identity, _standingHeight / 2, mask, QueryTriggerInteraction.Ignore);
     }
 
@@ -207,7 +204,7 @@ public class PlayerMovement : MonoBehaviour
             {
                 _curVelocity = new Vector3(_curVelocity.x, _char.velocity.y, _curVelocity.z);
             }
-
+            
             if (_curVelocity.y < _fallSoundVelocityThreshold)
             {
                 _sound.PlayLandingSound();
@@ -217,7 +214,7 @@ public class PlayerMovement : MonoBehaviour
         var gravity = _gravity;
 
         // head bonk => stop and fall instantly with a bit of downwards gravity
-        if (_jumping && CanJump())
+        if (_jumping && !HasSpaceToJump())
         {
             _curVelocity.y = gravity * Time.deltaTime;
             _jumping = false;
@@ -246,7 +243,10 @@ public class PlayerMovement : MonoBehaviour
 
     void TryJump()
     {
-        if (CanJump())
+        if (!IsGrounded)
+            return;
+
+        if (!HasSpaceToJump())
             return;
 
         _jumping = true;
