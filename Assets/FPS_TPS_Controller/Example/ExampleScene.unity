@@ -470,8 +470,6 @@ MonoBehaviour:
   MinPitch: -50
   MaxPitch: 70
   _positionValidator: {fileID: 1401180900}
-  _camera: {fileID: 1288599332}
-  AllowRotation: 0
 --- !u!114 &1401180897
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -528,7 +526,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 779518f2b8a30f247bd89bf91075cffa, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _viewBobbingIntensity: 1
+  _viewBobbingIntensity: 0.05
+  _bobbingSpeedMultiplier: 2
+  _smoothingSpeed: 10
 --- !u!114 &1401180899
 MonoBehaviour:
   m_ObjectHideFlags: 0

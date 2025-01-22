@@ -1,6 +1,13 @@
 using System.Collections;
 using UnityEngine;
 
+public struct MovementCameraOptions
+{
+    public bool didSwitchCamera;
+    public bool doBob;
+    public float moveSpeed;
+}
+
 public class MovementCamera : MonoBehaviour
 {
     public float HeadOffset
@@ -28,25 +35,36 @@ public class MovementCamera : MonoBehaviour
 
     private bool _firstPerson;
 
-    public void UpdateSystems(MovementInputData inputData)
+    private void Start()
     {
-        if (inputData.didSwitchCamera)
+        // Camera should not be parented 
+        // as it needs to move freely.
+        if (_camera.transform.parent)
+            _camera.transform.SetParent(null);
+    }
+
+    public void UpdateSystems(MovementCameraOptions cameraOptions)
+    {
+        if (cameraOptions.didSwitchCamera)
         {
             IsFirstPerson = !IsFirstPerson;
         }
 
         _mouseLook.CameraUpdate();
-    }
-    
-    IEnumerator CameraShakeCoroutine(float amplitude, float duration)
-    {
-        for (float i = duration * 1.02f; i > 0; i -= 0.02f)
+
+        if (cameraOptions.doBob)
         {
-            Vector3 _camShakePos = _camera.transform.position + (Vector3)Random.insideUnitCircle / (1 - amplitude);
-            _camera.transform.position = Vector3.Lerp(_camera.transform.position, _camShakePos, i * 0.02f / (1 - amplitude));
-            yield return new WaitForSeconds(0.02f);
+            _viewBobber.BobSpeed = cameraOptions.moveSpeed;
+            _viewBobber.StartBobbing();
         }
-        
-        yield break;
+        else
+        {
+            _viewBobber.StopBobbing();
+        }
+
+        _camera.transform.SetPositionAndRotation(
+            _mouseLook.CameraPosition + Vector3.up * _viewBobber.ViewBobValue, 
+            _mouseLook.CameraRotation);
     }
+
 }

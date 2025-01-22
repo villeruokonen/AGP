@@ -1,6 +1,5 @@
 ﻿using UnityEngine;
 
-[RequireComponent(typeof(Camera))]
 public class MouseLook : MonoBehaviour
 {
     public bool IsFirstPerson
@@ -8,6 +7,9 @@ public class MouseLook : MonoBehaviour
         get => _firstPerson;
         set => _firstPerson = value;
     }
+    
+    public Vector3 CameraPosition => _cameraPosition;
+    public Quaternion CameraRotation => _cameraRotation;
 
     [Header("General Settings")]
     public LayerMask DrawInFirstPerson;
@@ -24,16 +26,14 @@ public class MouseLook : MonoBehaviour
     public float CameraFollowSpeed = 15;
     public float MinPitch = -30.0f;
     public float MaxPitch = 30.0f;
-    public Camera Camera => _camera;
 
     [Header("Components")]
     [SerializeField] private CameraPositionValidator _positionValidator;
-    [SerializeField] private Camera _camera;
 
     private float angleX = 0.0f;
 
-    private Quaternion _curRot;
-    [HideInInspector] public bool AllowRotation = true;
+    private Vector3 _cameraPosition;
+    private Quaternion _cameraRotation;
 
     private bool _firstPerson;
 
@@ -45,15 +45,6 @@ public class MouseLook : MonoBehaviour
             return;
         }
 
-        if (!_camera)
-            return;
-
-        // Camera should not be parented to anything.
-        if (_camera.transform.parent)
-        {
-            _camera.transform.SetParent(null);
-        }
-
         if (LockCursor)
         {
             Cursor.lockState = CursorLockMode.Locked;
@@ -62,8 +53,6 @@ public class MouseLook : MonoBehaviour
         {
             Cursor.lockState = CursorLockMode.None;
         }
-
-        _camera.transform.localRotation = _curRot;
 
         float damping = _firstPerson ? 15 : CameraFollowSpeed;
 
@@ -75,7 +64,7 @@ public class MouseLook : MonoBehaviour
         // Apply the initial rotation to the camera.
         Quaternion initialRotation = Quaternion.Euler(CameraAngleOffset);
 
-        Vector3 camEuler = _camera.transform.rotation.eulerAngles;
+        Vector3 camEuler = _cameraRotation.eulerAngles;
 
         angleX -= my * Sensitivity;
 
@@ -89,9 +78,9 @@ public class MouseLook : MonoBehaviour
         Quaternion newRot = Quaternion.Euler(angleX, camEuler.y, 0.0f) *
           initialRotation;
 
-        Vector3 forward = _camera.transform.rotation * Vector3.forward;
-        Vector3 right = _camera.transform.rotation * Vector3.right;
-        Vector3 up = _camera.transform.rotation * Vector3.up;
+        Vector3 forward = _cameraRotation * Vector3.forward;
+        Vector3 right = _cameraRotation * Vector3.right;
+        Vector3 up = _cameraRotation * Vector3.up;
 
         Vector3 targetPos = TrackedBody.transform.position;
 
@@ -114,12 +103,11 @@ public class MouseLook : MonoBehaviour
         {
             desiredPosition = _positionValidator.ValidateCameraPosition(desiredPosition, TrackedBody);
 
-            position = Vector3.Lerp(_camera.transform.position, desiredPosition, Time.deltaTime * damping);
+            position = Vector3.Lerp(_cameraPosition, desiredPosition, Time.deltaTime * damping);
         }
 
-        _camera.transform.SetPositionAndRotation(position, newRot);
-
-        _curRot = newRot;
+        _cameraPosition = position;
+        _cameraRotation = newRot;
 
         Quaternion newCharacterRot = Quaternion.Euler(TrackedBody.transform.rotation.x, camEuler.y, 0.0f) * initialRotation;
 

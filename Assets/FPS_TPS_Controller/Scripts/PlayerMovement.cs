@@ -90,7 +90,14 @@ public class PlayerMovement : MonoBehaviour
         UpdateMovement(inputData);
         UpdateJumpAndGravity(inputData);
 
-        _camController.UpdateSystems(inputData);
+        var cameraOptions = new MovementCameraOptions
+        {
+            didSwitchCamera = inputData.didSwitchCamera,
+            doBob = _enableViewBobbing && IsGrounded && _char.velocity.magnitude > 0.2f,
+            moveSpeed = _moveSpeed
+        };
+
+        _camController.UpdateSystems(cameraOptions);
     }
 
     void UpdateMovement(MovementInputData input)
