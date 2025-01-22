@@ -213,9 +213,7 @@ public class PlayerMovement : MonoBehaviour
         }
 
         var gravity = Gravity;
-
-        // head bonk => stop and fall instantly with a bit of downwards gravity
-        if (_jumping && !HasSpaceToJump())
+        if (_jumping && (_curVelocity.y <= 0 || !HasSpaceToJump()))
         {
             _curVelocity.y = gravity * Time.deltaTime;
             _jumping = false;
@@ -231,11 +229,6 @@ public class PlayerMovement : MonoBehaviour
         if (_curVelocity.y < _terminalVelocity)
         {
             _curVelocity.y = _terminalVelocity;
-        }
-
-        if (_curVelocity.y < 0)
-        {
-            _jumping = false;
         }
 
         _state = _climbing ? MovementState.Climbing : IsGrounded ? MovementState.Grounded : MovementState.Falling;
