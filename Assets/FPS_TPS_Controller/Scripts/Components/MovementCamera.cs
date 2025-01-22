@@ -3,9 +3,10 @@ using UnityEngine;
 
 public struct MovementCameraOptions
 {
+    public Vector2 lookInput;
+    public float moveSpeed;
     public bool didSwitchCamera;
     public bool doBob;
-    public float moveSpeed;
 }
 
 public class MovementCamera : MonoBehaviour
@@ -50,7 +51,7 @@ public class MovementCamera : MonoBehaviour
             IsFirstPerson = !IsFirstPerson;
         }
 
-        _mouseLook.CameraUpdate();
+        _mouseLook.CameraUpdate(cameraOptions.lookInput);
 
         if (cameraOptions.doBob)
         {

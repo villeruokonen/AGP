@@ -1,14 +1,19 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Events;
 
 public class ViewBobber : MonoBehaviour
 {
+    public UnityEvent OnReachBobApex = new();
+    
     public float ViewBobValue => _bobValue;
     public float BobSpeed 
     {
         get => _viewBobbingSpeed;
         set => _viewBobbingSpeed = value;
     }
+
+    [SerializeField] private bool _enable;
 
     [SerializeField] private float _viewBobbingIntensity = 1;
     [SerializeField] private float _bobbingSpeedMultiplier = 1;
@@ -24,6 +29,9 @@ public class ViewBobber : MonoBehaviour
 
     public void StartBobbing()
     {
+        if (!_enable)
+            return;
+
         if (_isBobbing)
             return;
 
@@ -40,6 +48,9 @@ public class ViewBobber : MonoBehaviour
 
     private void Update()
     {
+        if (!_enable)
+            return;
+
         _bobValue = Mathf.Lerp(_bobValue, _bobValueTarget, Time.deltaTime * _smoothingSpeed);
 
         if (!_isBobbing)
@@ -55,6 +66,7 @@ public class ViewBobber : MonoBehaviour
         if (_bobTimer > Mathf.PI * 2)
         {
             _bobTimer -= Mathf.PI * 2;
+            OnReachBobApex.Invoke();
         }
 
         _bobValueTarget = waveslice * _viewBobbingIntensity;

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 using Random = UnityEngine.Random;
+using UnityEngine.Events;
 
 [RequireComponent(typeof(CharacterController))]
 public class PlayerMovement : MonoBehaviour
@@ -15,9 +16,6 @@ public class PlayerMovement : MonoBehaviour
         Climbing
     }
 
-    [Header("Options")]
-    [SerializeField] private bool _enableViewBobbing = true;
-
     private bool IsGrounded => _char.isGrounded;
     private float Gravity => -Mathf.Abs(Physics.gravity.y * _gravityFactor);
 
@@ -25,6 +23,7 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _gravityFactor = -25.8f;
     [SerializeField] private float _terminalVelocity = -120f;
     [SerializeField] private float _walkSpeed = 10;
+    [SerializeField] private float _sprintSpeed = 12;
     [SerializeField] private float _crouchedWalkSpeed = 5;
     [SerializeField] private float _jumpHeight = 12;
     [SerializeField] private float _crouchJumpFactor = 0.8f;
@@ -35,17 +34,23 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private float _crouchedHeight = 0.4f;
     [SerializeField] private float _baseHeadOffset = 0.8f;
     [SerializeField] private float _crouchedHeadOffset = 0.5f;
-    [SerializeField] private float _fallSoundVelocityThreshold = -10f;
 
     [Header("Components")]
-    [SerializeField] private MovementSound _sound;
     [SerializeField] private MovementCamera _camController;
     [SerializeField] private MovementInput _input;
+
+    [Header("Events")]
+    [Tooltip("Called when jumping.")]
+    public UnityEvent OnJump = new();
+
+    [Tooltip("Called when landing, where parameter T0 is float velocity.")]
+    public UnityEvent<float> OnLand = new();
 
     private bool _jumping;
     private bool _climbing;
     private bool _wasGrounded;
     private bool _crouched;
+    private bool _sprinting;
     private bool _initialized;
 
     private Vector3 _lastVelocity;
@@ -93,7 +98,8 @@ public class PlayerMovement : MonoBehaviour
         var cameraOptions = new MovementCameraOptions
         {
             didSwitchCamera = inputData.didSwitchCamera,
-            doBob = _enableViewBobbing && IsGrounded && _char.velocity.magnitude > 0.2f,
+            lookInput = inputData.lookInput,
+            doBob = IsGrounded && _char.velocity.magnitude > 0.2f,
             moveSpeed = _moveSpeed
         };
 
@@ -102,19 +108,21 @@ public class PlayerMovement : MonoBehaviour
 
     void UpdateMovement(MovementInputData input)
     {
-        var pressingMoveKeys = input.inputDirection.magnitude > 0;
+        var pressingMoveKeys = input.moveInput.magnitude > 0;
 
-        var desiredMoveSpeed = _crouched ? _crouchedWalkSpeed : _walkSpeed;
+        var desiredMoveSpeed = _crouched ? _crouchedWalkSpeed : _sprinting ? _sprintSpeed : _walkSpeed;
         _moveSpeed = Mathf.Lerp(_moveSpeed, desiredMoveSpeed, Time.deltaTime * 10);
 
         Vector3 desiredVelocity;
         if (pressingMoveKeys)
         {
-            var translatedDirection = Quaternion.Euler(0, transform.eulerAngles.y, 0) * input.inputDirection;
+            var translatedDirection = Quaternion.Euler(0, transform.eulerAngles.y, 0) * input.moveInput;
             desiredVelocity = translatedDirection.normalized * _moveSpeed;
         }
         else
+        {
             desiredVelocity = Vector3.zero;
+        }
 
         Vector3 velocity = CalculateVelocity(_lastVelocity, desiredVelocity);
 
@@ -139,6 +147,11 @@ public class PlayerMovement : MonoBehaviour
             _camController.HeadOffset = _baseHeadOffset;
 
         _char.height = _crouched ? _crouchedHeight : _standingHeight;
+
+        if (!_sprinting && input.isSprinting)
+        {
+            _sprinting = true;
+        }
 
         _char.Move(_curVelocity * Time.deltaTime);
     }
@@ -200,6 +213,8 @@ public class PlayerMovement : MonoBehaviour
 
     void UpdateJumpAndGravity(MovementInputData inputData)
     {
+        var gravity = Gravity;
+
         if (inputData.isJumping && IsGrounded)
         {
             TryJump();
@@ -211,15 +226,13 @@ public class PlayerMovement : MonoBehaviour
             if (_char.velocity.y < 0)
             {
                 _curVelocity = new Vector3(_curVelocity.x, _char.velocity.y, _curVelocity.z);
-            }
 
-            if (_curVelocity.y < _fallSoundVelocityThreshold)
-            {
-                _sound.PlayLandingSound();
+                // Only invoke event if we actually landed with meaningful velocity.
+                if (_char.velocity.y < gravity * Time.deltaTime)
+                    OnLand.Invoke(_curVelocity.y);
             }
         }
-
-        var gravity = Gravity;
+        
         if (_jumping && (_curVelocity.y <= 0 || !HasSpaceToJump()))
         {
             _curVelocity.y = gravity * Time.deltaTime;
@@ -265,60 +278,8 @@ public class PlayerMovement : MonoBehaviour
             _curVelocity.y = jumpVelocity * _crouchJumpFactor;
         }
 
-        _sound.PlayJumpSound();
+        OnJump.Invoke();
     }
-
-    /* void UpdateViewBobbingAndFootsteps()
-    {
-        // Don't waste time doing math if it's not used in either of these effects
-        if (!_enableViewBobbing && !_playFootSteps)
-            return;
-        
-        // Don't bob the view or play footstep sounds if we're not moving enough 
-        // (eg. running against or very acutely along a wall)
-        bool actuallyMoving = Vector3.Distance(_curPos, _lastPos) > 0.002f;
-
-        if (!actuallyMoving)
-            return;
-        
-        _lastPos = _char.transform.position;
-
-        if (_enableViewBobbing)
-        {
-            if (_pressingMoveKeys && IsGrounded)
-            {
-                _viewBobSine = Mathf.Lerp(_viewBobSine, Mathf.Sin(Time.time * _curSpeed) * _viewBobbingIntensity, Time.deltaTime);
-            }
-            else
-            {
-                _viewBobSine = Mathf.Lerp(_viewBobSine, 0, Time.deltaTime * 15);
-            }
-            _mouseLook.ViewBobValue = _viewBobSine;
-        }
-
-        if (_playFootSteps)
-        {
-            // Don't bother continuing if we haven't been grounded for long enough, or not trying to move
-            if (!IsGrounded || !_pressingMoveKeys) { return; }
-            _stepTime += Time.deltaTime;
-
-            _stepSine = Mathf.Lerp(_stepSine, (Mathf.Sin(_stepTime * _curSpeed) * _viewBobbingIntensity), Time.deltaTime);
-            // Check whether step sine is negative or positive and set sign accordingly (see further)
-            _stepSign = _stepSine < 0 ? -1 : 1;
-
-            // Hacky solution to footsteps:
-            // If the sine has passed 0
-            // (into negative if it was positive, into positive if it was negative),
-            // only then play a footstep sound, and update the last sign of the step sine function
-            if (_stepSign == _lastSign) { return; }
-            _lastSign = _stepSign;
-
-            float multiplier = _curSpeed / 3.5f;
-            var randPitch = Random.Range(0.85f, 1f);
-            var volume = Mathf.Clamp(Random.Range(0.8f, 1) * multiplier / 2, 0.2f, 1);
-            PlayMovementSound(GetFootstepClip(), volume, transform.position, randPitch);
-        }
-    } */
 }
 
 

@@ -6,8 +6,20 @@ public class MovementSound : MonoBehaviour
     [Serializable]
     public struct KeywordSoundPair
     {
-        public string keyword;
+        public string keywords;
         public AudioClip sound;
+
+        public bool HasTextureKeyword(string textureName)
+        {
+            string[] keywords = this.keywords.Split(';');
+            foreach (var kw in keywords)
+            {
+                if (textureName.Contains(kw, StringComparison.InvariantCultureIgnoreCase))
+                    return true;
+            }
+
+            return false;
+        }
     }
 
     [SerializeField] private AudioClip _jumpClip;
@@ -20,22 +32,56 @@ public class MovementSound : MonoBehaviour
 
     [SerializeField] private float _groundRaycastLength;
 
+    [Tooltip("When the falling velocity is this or larger, the fall sound volume is max.")]
+    [SerializeField] private float _fallSoundMaxVolumeVelocity = -10f;
+
     [Tooltip("Material name keywords to match with sounds, " +
         "for separate sounds based on the material under the player.")]
     [SerializeField] private KeywordSoundPair[] _keywordSoundPairs;
 
+
+    // Min time between landing sounds
+    private const float LAND_SOUND_COOLDOWN = 0.5f;
+    private float _landSoundCooldownTimer;
+
+    private void Update()
+    {
+        IncrementTimers();
+    }
+
+    private void IncrementTimers()
+    {
+        _landSoundCooldownTimer += Time.deltaTime;
+    }
+
     public void PlayJumpSound()
     {
+        if (!_playJumpSound)
+            return;
+
         PlaySound(_jumpClip);
     }
 
-    public void PlayLandingSound()
+    public void PlayLandingSound(float velocity)
     {
-        PlaySound(_landingClip);
+        if (!_playLandingSound)
+            return;
+
+        if (_landSoundCooldownTimer < LAND_SOUND_COOLDOWN)
+            return;
+        
+        _landSoundCooldownTimer = 0;
+
+        float volume = Mathf.InverseLerp(0, _fallSoundMaxVolumeVelocity, velocity);
+
+        PlaySound(_landingClip, volume);
     }
 
     public void PlayFootStep()
     {
+        if (!_playFootSteps)
+            return;
+
         PlaySound(GetFootstepClip());
     }
 
@@ -48,6 +94,7 @@ public class MovementSound : MonoBehaviour
         audio.transform.position = transform.position;
         AudioSource source = audio.AddComponent<AudioSource>();
         source.spatialBlend = 1.0f;
+        source.dopplerLevel = 0;
         source.clip = clip;
         source.volume = volume;
         source.Play();
@@ -81,7 +128,7 @@ public class MovementSound : MonoBehaviour
     // Get correct footstep sound based on what we're standing on
     AudioClip GetFootstepClip()
     {
-        AudioClip defaultClip = null;
+        AudioClip defaultClip = _defaultFootstep;
 
         var ray = new Ray(transform.position, Vector3.down);
         var mask = ~(1 << LayerMask.NameToLayer("Player"));
@@ -106,7 +153,7 @@ public class MovementSound : MonoBehaviour
 
         foreach (var pair in _keywordSoundPairs)
         {
-            if (texName.Contains(pair.keyword))
+            if (pair.HasTextureKeyword(texName))
             {
                 return pair.sound;
             }

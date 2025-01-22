@@ -37,7 +37,7 @@ public class MouseLook : MonoBehaviour
 
     private bool _firstPerson;
 
-    public void CameraUpdate()
+    public void CameraUpdate(Vector2 lookInput)
     {
         if (!TrackedBody)
         {
@@ -58,8 +58,8 @@ public class MouseLook : MonoBehaviour
 
         // Mouse X and Y input
         float mx, my;
-        mx = Input.GetAxisRaw("Mouse X");
-        my = Input.GetAxisRaw("Mouse Y");
+        mx = lookInput.x;
+        my = lookInput.y;
 
         // Apply the initial rotation to the camera.
         Quaternion initialRotation = Quaternion.Euler(CameraAngleOffset);
