@@ -19,9 +19,10 @@ public class PlayerMovement : MonoBehaviour
     [SerializeField] private bool _enableViewBobbing = true;
 
     private bool IsGrounded => _char.isGrounded;
+    private float Gravity => -Mathf.Abs(Physics.gravity.y * _gravityFactor);
 
     [Header("Values")]
-    [SerializeField] private float _gravity = -25.8f;
+    [SerializeField] private float _gravityFactor = -25.8f;
     [SerializeField] private float _terminalVelocity = -120f;
     [SerializeField] private float _walkSpeed = 10;
     [SerializeField] private float _crouchedWalkSpeed = 5;
@@ -211,7 +212,7 @@ public class PlayerMovement : MonoBehaviour
             }
         }
 
-        var gravity = _gravity;
+        var gravity = Gravity;
 
         // head bonk => stop and fall instantly with a bit of downwards gravity
         if (_jumping && !HasSpaceToJump())
@@ -251,13 +252,13 @@ public class PlayerMovement : MonoBehaviour
 
         _jumping = true;
 
-        float jumpVelocity = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+        float jumpVelocity = Mathf.Sqrt(_jumpHeight * -2f * Gravity);
 
         if (!_crouched)
         {
             _curVelocity.y = jumpVelocity;
         }
-        
+
         else
         {
             // Jump a little lower if crouched

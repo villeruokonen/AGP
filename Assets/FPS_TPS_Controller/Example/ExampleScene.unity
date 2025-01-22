@@ -633,11 +633,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _enableViewBobbing: 1
-  _gravity: -25.8
+  _gravityFactor: 1
   _terminalVelocity: -120
   _walkSpeed: 10
   _crouchedWalkSpeed: 5
-  _jumpHeight: 12
+  _jumpHeight: 2
   _crouchJumpFactor: 0.8
   _groundFriction: 15
   _airFriction: 0.6
