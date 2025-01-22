@@ -204,7 +204,7 @@ public class PlayerMovement : MonoBehaviour
             {
                 _curVelocity = new Vector3(_curVelocity.x, _char.velocity.y, _curVelocity.z);
             }
-            
+
             if (_curVelocity.y < _fallSoundVelocityThreshold)
             {
                 _sound.PlayLandingSound();
@@ -251,14 +251,17 @@ public class PlayerMovement : MonoBehaviour
 
         _jumping = true;
 
+        float jumpVelocity = Mathf.Sqrt(_jumpHeight * -2f * _gravity);
+
         if (!_crouched)
         {
-            _curVelocity.y = _jumpHeight;
+            _curVelocity.y = jumpVelocity;
         }
+        
         else
         {
             // Jump a little lower if crouched
-            _curVelocity.y = _jumpHeight * _crouchJumpFactor;
+            _curVelocity.y = jumpVelocity * _crouchJumpFactor;
         }
 
         _sound.PlayJumpSound();
