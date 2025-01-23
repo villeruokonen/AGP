@@ -47,7 +47,10 @@ public class MovementInput : MonoBehaviour
 
     public void OnCameraSwitchInput(InputAction.CallbackContext ctx)
     {
-        _switchedCamera = ctx.ReadValueAsButton();
+        if (!ctx.started)
+            return;
+        
+        _switchedCamera = true;
     }
 
     private Vector3 _moveInput;
@@ -59,7 +62,7 @@ public class MovementInput : MonoBehaviour
 
     public MovementInputData PollInput()
     {
-        return new MovementInputData
+        var data = new MovementInputData()
         {
             moveInput = _moveInput,
             lookInput = _lookInput,
@@ -68,6 +71,12 @@ public class MovementInput : MonoBehaviour
             isSprinting = _sprinting,
             didSwitchCamera = _switchedCamera
         };
+        
+        // Clear flag
+        if (_switchedCamera)
+            _switchedCamera = false;
+
+        return data;
 
     }
 }
