@@ -127,7 +127,6 @@ public class PlayerMovement : MonoBehaviour
         Vector3 velocity = CalculateVelocity(_lastVelocity, desiredVelocity);
 
         _curVelocity = new Vector3(velocity.x, _curVelocity.y, velocity.z);
-        _curVelocity = ClampHorizontalVelocity(_curVelocity);
 
         if (!_crouched && input.isCrouching)
         {
@@ -148,22 +147,11 @@ public class PlayerMovement : MonoBehaviour
 
         _char.height = _crouched ? _crouchedHeight : _standingHeight;
 
-        if (!_sprinting && input.isSprinting)
-        {
-            _sprinting = true;
-        }
+        _sprinting = input.isSprinting;
+
+        Debug.DrawRay(transform.position, _curVelocity);
 
         _char.Move(_curVelocity * Time.deltaTime);
-    }
-
-    Vector3 ClampHorizontalVelocity(Vector3 velocity)
-    {
-        Vector3 vel = velocity;
-
-        vel.x = Mathf.Clamp(vel.x, -_walkSpeed, _walkSpeed);
-        vel.z = Mathf.Clamp(vel.z, -_walkSpeed, _walkSpeed);
-
-        return vel;
     }
 
     // Messy math for smooth movement
